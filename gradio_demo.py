@@ -22,22 +22,27 @@ from uniflowmatch.utils.viz import warp_image_with_flow
 
 # Global model variable
 model = None
-USE_REFINEMENT_MODEL = False
+current_model_str = ""
 
 use_gpu = torch.cuda.is_available()
 
-def initialize_model(use_refinement: bool = False):
+
+def initialize_model(required_model_str=""):
     """Initialize the model - call this once at startup"""
-    global model, USE_REFINEMENT_MODEL
-    USE_REFINEMENT_MODEL = use_refinement
+
+    global model, current_model_str
 
     try:
-        if USE_REFINEMENT_MODEL:
-            print("Loading UFM Refinement model from infinity1096/UFM-Refine...")
-            model = UniFlowMatchClassificationRefinement.from_pretrained("infinity1096/UFM-Refine")
-        else:
-            print("Loading UFM Base model from infinity1096/UFM-Base...")
+        if required_model_str == "Base Model (560x420)":
             model = UniFlowMatchConfidence.from_pretrained("infinity1096/UFM-Base")
+        elif required_model_str == "Refinement Model (560x420)":
+            model = UniFlowMatchClassificationRefinement.from_pretrained("infinity1096/UFM-Refine")
+        elif required_model_str == "Base Model (980x644)":
+            model = UniFlowMatchConfidence.from_pretrained("infinity1096/UFM-Base-980")
+        elif required_model_str == "Refinement Model (980x644)":
+            model = UniFlowMatchClassificationRefinement.from_pretrained("infinity1096/UFM-Refine-980")
+        else:
+            raise ValueError("Invalid model type selected.")
 
         # Set model to evaluation mode
         if hasattr(model, "eval"):
@@ -49,10 +54,10 @@ def initialize_model(use_refinement: bool = False):
             model = model.to("cuda")
 
         print("Model loaded successfully!")
-        return True
+        return model
     except Exception as e:
         print(f"Error loading model: {e}")
-        return False
+        return None
 
 
 def process_images(source_image, target_image, model_type_choice):
@@ -63,10 +68,11 @@ def process_images(source_image, target_image, model_type_choice):
         return None, None, None, "Please upload both images."
 
     # Reinitialize model if type has changed
-    current_refinement = model_type_choice == "Refinement Model"
-    if current_refinement != USE_REFINEMENT_MODEL:
+    global model, current_model_str
+    if current_model_str != model_type_choice:
         print(f"Switching to {model_type_choice}...")
-        initialize_model(current_refinement)
+        model = initialize_model(model_type_choice)
+        current_model_str = model_type_choice
 
     if model is None:
         return None, None, None, "Model not loaded. Please restart the application."
@@ -144,7 +150,16 @@ def create_demo():
             target_input = gr.Image(label="Target Image", type="pil")
 
         # Model selection
-        model_type = gr.Radio(choices=["Base Model", "Refinement Model"], value="Base Model", label="Model Type")
+        model_type = gr.Radio(
+            choices=[
+                "Base Model (560x420)",
+                "Refinement Model (560x420)",
+                "Base Model (980x644)",
+                "Refinement Model (980x644)",
+            ],
+            value="Base Model (560x420)",
+            label="Model Type",
+        )
 
         # Process button
         process_btn = gr.Button("Process Images")
@@ -198,7 +213,8 @@ def main():
     """Main function for running the Gradio demo."""
     # Initialize model
     print("Initializing UniFlowMatch model...")
-    model_loaded = initialize_model(use_refinement=False)  # Start with base model
+    model_loaded = initialize_model(required_model_str="Base Model (560x420)")  # Start with base model
+    current_model_str = "Base Model (560x420)"
 
     if not model_loaded:
         print("Error: Model failed to load. Please check your model installation and HuggingFace access.")

@@ -867,9 +867,9 @@ def unmap_predicted_flow(
     # Step5: Embed the flow in its original space
     flow_output = torch.zeros((B, 2, img0_source_shape[0], img0_source_shape[1]), dtype=flow.dtype, device=flow.device)
 
-    flow_output[
-        ..., img0_region_source[0] : img0_region_source[1], img0_region_source[2] : img0_region_source[3]
-    ] = flow_source
+    flow_output[..., img0_region_source[0] : img0_region_source[1], img0_region_source[2] : img0_region_source[3]] = (
+        flow_source
+    )
 
     flow_valid = torch.zeros((B, img0_source_shape[0], img0_source_shape[1]), dtype=torch.bool, device=flow.device)
     flow_valid[..., img0_region_source[0] : img0_region_source[1], img0_region_source[2] : img0_region_source[3]] = True
@@ -1003,9 +1003,9 @@ def unmap_predicted_channels(
     channel_valid = torch.zeros(
         (B, img0_source_shape[0], img0_source_shape[1]), dtype=torch.bool, device=channel.device
     )
-    channel_valid[
-        ..., img0_region_source[0] : img0_region_source[1], img0_region_source[2] : img0_region_source[3]
-    ] = True
+    channel_valid[..., img0_region_source[0] : img0_region_source[1], img0_region_source[2] : img0_region_source[3]] = (
+        True
+    )
 
     return channel_output, channel_valid
 

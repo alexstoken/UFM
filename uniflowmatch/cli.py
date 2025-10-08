@@ -9,6 +9,7 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
+
 def main():
     """Main CLI entry point."""
     parser = argparse.ArgumentParser(description="UFM: Unified Dense Correspondence with Flow", prog="ufm")

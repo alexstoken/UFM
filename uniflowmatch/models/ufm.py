@@ -739,6 +739,7 @@ class UniFlowMatchClassificationRefinement(UniFlowMatch, PyTorchModelHubMixin):
         # Classification Heads & Adaptors
         temperature: float = 4,
         use_unet_feature: bool = False,
+        use_unet_batchnorm: bool = False,
         classification_head_type: str = "patch_mlp",
         classification_head_kwargs: Dict[str, Any] = {},
         feature_combine_method: str = "conv",
@@ -770,6 +771,7 @@ class UniFlowMatchClassificationRefinement(UniFlowMatch, PyTorchModelHubMixin):
             uncertainty_adaptors_kwargs (Dict[str, Any]): Uncertainty adaptors configuration
             temperature (float): Temperature parameter for attention softmax in classification refinement
             use_unet_feature (bool): Whether to use additional U-Net features for refinement
+            use_unet_batchnorm (bool): Whether to use batch normalization in U-Net, helps with convergence
             classification_head_type (str): Classification head type, currently only "patch_mlp" supported
             classification_head_kwargs (Dict[str, Any]): Classification head configuration
             feature_combine_method (str): Method for combining features ("conv" or "modulate")
@@ -815,7 +817,10 @@ class UniFlowMatchClassificationRefinement(UniFlowMatch, PyTorchModelHubMixin):
 
         # Unet experiment
         if self.use_unet_feature:
-            self.unet_feature = UNet(in_channels=3, out_channels=16, features=[64, 128, 256, 512])
+            self.use_unet_batchnorm = use_unet_batchnorm
+            self.unet_feature = UNet(
+                in_channels=3, out_channels=16, features=[64, 128, 256, 512], use_batch_norm=self.use_unet_batchnorm
+            )
 
             self.conv1 = nn.Conv2d(32, 32, kernel_size=1, stride=1, padding=0)
 
@@ -1248,12 +1253,18 @@ if __name__ == "__main__":
     from uniflowmatch.utils.geometry import get_meshgrid_torch
     from uniflowmatch.utils.viz import warp_image_with_flow
 
-    USE_REFINEMENT_MODEL = False
+    refinement_model = False
+    resolution = 560
 
-    if USE_REFINEMENT_MODEL:
-        model = UniFlowMatchClassificationRefinement.from_pretrained("infinity1096/UFM-Refine")
+    if not refinement_model:
+        model = UniFlowMatchConfidence.from_pretrained(
+            "infinity1096/UFM-Base" if resolution == 560 else "infinity1096/UFM-Base-980"
+        )
     else:
-        model = UniFlowMatchConfidence.from_pretrained("infinity1096/UFM-Base")
+        model = UniFlowMatchClassificationRefinement.from_pretrained(
+            "infinity1096/UFM-Refine" if resolution == 560 else "infinity1096/UFM-Refine-980"
+        )
+    model.eval()
 
     # === Load and Prepare Images ===
     source_path = "examples/image_pairs/fire_academy_0.png"
