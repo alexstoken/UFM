@@ -19,6 +19,8 @@
 </p>
 
 ## Updates
+- [2025/10/21] Complete training and most data processing scripts. (branch: train)
+- [2025/10/20] Benchmark & data script for primary results. (branch: benchmark)
 - [2025/10/08] Released 980 resolution models.
 - [2025/06/10] Initial release of model checkpoint and inference code.
 
